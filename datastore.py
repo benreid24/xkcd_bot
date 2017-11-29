@@ -10,9 +10,11 @@ def connect_datastore(empty=False):
                 (
                    id INTEGER PRIMARY KEY,
                    Poster varchar(128),
+                   CommentId int,
                    Text varchar(1024),
                    Link varchar(256),
                    Comic int,
+                   ParentId int,
                    ParentText varchar(1024)
                 );
     """
