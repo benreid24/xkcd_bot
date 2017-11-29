@@ -3,6 +3,7 @@
 def contains_reference(comment):
     return 'xkcd.com' in comment
 
+
 def parse_link(link):
     for part in link.split('/'):
         try:
@@ -11,6 +12,7 @@ def parse_link(link):
         except ValueError:
             continue
     return 0
+
 
 def parse_comment(comment):
     parsed = {

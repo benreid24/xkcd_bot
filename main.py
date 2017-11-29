@@ -1,5 +1,6 @@
 import json
-import logging, logging.config
+import logging
+import logging.config
 
 import praw
 
@@ -35,7 +36,7 @@ def main():
         bot.run(reddit, datastore, config)
 
     except Exception as err:
-        logger.error('Caught exception: %s', str(err))
+        logger.error('Caught exception: %s', str(err), exc_info=True)
 
 
 if __name__ == '__main__':

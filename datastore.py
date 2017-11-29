@@ -9,15 +9,40 @@ def connect_datastore(empty=False):
     query = """CREATE TABLE IF NOT EXISTS links
                 (
                    id INTEGER PRIMARY KEY,
-                   Poster varchar(128),
-                   CommentId int,
-                   Text varchar(1024),
-                   Link varchar(256),
-                   Comic int,
-                   ParentId int,
-                   ParentText varchar(1024)
+                   CommentId varchar(64) NOT NULL,
+                   Text varchar(1024) NOT NULL,
+                   Link varchar(256) NOT NULL,
+                   Comic int NOT NULL,
+                   ParentId varchar(64) NULL,
+                   ParentText varchar(1024) NULL
                 );
     """
     conn.execute(query)
 
     return conn
+
+
+def save_reference(db, reference):
+    if 'ParentId' not in reference:
+        reference['ParentId'] = None
+    if 'ParentText' not in reference:
+        reference['ParentText'] = None
+
+    values = (reference['CommentId'],
+              reference['Text'],
+              reference['Link'],
+              reference['Comic'],
+              reference['ParentId'],
+              reference['ParentText'])
+    query = """INSERT INTO
+               links (
+                   CommentId,
+                   Text,
+                   Link,
+                   Comic,
+                   ParentId,
+                   ParentText
+               )
+               VALUES (?,?,?,?,?,?)
+               """
+    db.execute(query, values)
