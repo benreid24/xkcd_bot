@@ -7,6 +7,7 @@ import datastore
 
 logger = logging.getLogger(__name__)
 
-def run(reddit, db):
+
+def run(reddit, db, config):
     # Run!
-    logger.info('Beginning execution of xkcd bot')
+    logger.info('Beginning execution of xkcd bot on %i subreddits', len(config['subreddits']))

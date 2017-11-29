@@ -18,18 +18,22 @@ def main():
         logger = logging.getLogger(__name__)
 
         # Connect to Reddit
-        config = json.load(open('config.json'))
-        reddit = praw.Reddit(username=config['auth']['username'],
-                             password=config['auth']['password'],
-                             client_id=config['auth']['app_id'],
-                             client_secret=config['auth']['secret'],
+        auth = json.load(open('auth.json'))
+        reddit = praw.Reddit(username=auth['username'],
+                             password=auth['password'],
+                             client_id=auth['app_id'],
+                             client_secret=auth['secret'],
                              user_agent='xkcd Stats Bot by u/xkcd_stats_bot'
                              )
         logger.info("Connected to Reddit as: "+str(reddit.user.me()))
 
         # Connect to datastore
         datastore = ds.connect_datastore()
-        bot.run(reddit,datastore)
+
+        # Run bot
+        config = json.load(open('config.json'))
+        bot.run(reddit, datastore, config)
+
     except Exception as err:
         logger.error('Caught exception: %s', str(err))
 
