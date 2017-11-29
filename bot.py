@@ -48,9 +48,7 @@ def run(reddit, db, config):
     logger.info('Beginning execution of xkcd bot on %i subreddits', len(config['subreddits']))
 
     subreddit_str = '+'.join(config['subreddits'])
-    print(subreddit_str)
-    print(parser.parse_link('https://xkcd.com/327/'))
 
     subreddit = reddit.subreddit(subreddit_str)
-    for submission in subreddit.top("all", limit=10):
+    for submission in subreddit.top("all", limit=2):
         handle_submission(db, submission)

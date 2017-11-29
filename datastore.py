@@ -8,7 +8,7 @@ def connect_datastore(empty=False):
 
     query = """CREATE TABLE IF NOT EXISTS links
                 (
-                   id INTEGER PRIMARY KEY,
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                    CommentId varchar(64) NOT NULL,
                    Text varchar(1024) NOT NULL,
                    Link varchar(256) NOT NULL,
@@ -28,12 +28,8 @@ def save_reference(db, reference):
     if 'ParentText' not in reference:
         reference['ParentText'] = None
 
-    values = (reference['CommentId'],
-              reference['Text'],
-              reference['Link'],
-              reference['Comic'],
-              reference['ParentId'],
-              reference['ParentText'])
+    print(reference)
+
     query = """INSERT INTO
                links (
                    CommentId,
@@ -43,6 +39,14 @@ def save_reference(db, reference):
                    ParentId,
                    ParentText
                )
-               VALUES (?,?,?,?,?,?)
+               VALUES (
+                   :CommentId,
+                   :Text,
+                   :Link,
+                   :Comic,
+                   :ParentId,
+                   :ParentText);
                """
-    db.execute(query, values)
+    cursor = db.cursor()
+    cursor.execute(query, reference)
+    db.commit()
