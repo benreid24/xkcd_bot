@@ -16,7 +16,7 @@ def handle_submission(db, submission):
 
     if parser.contains_reference(text):
         logger.info('Found xkcd reference in submission %s', submission.fullname)
-        reference = parser.parse_comment(text)
+        reference = parser.parse_comment(db, text)
         reference['CommentId'] = submission.fullname
         datastore.save_reference(db, reference)
 
@@ -31,7 +31,7 @@ def handle_comment(db, comment, parent_id, parent_text):
 
     if parser.contains_reference(body):
         logger.info('Found xkcd reference in comment %s', comment.fullname)
-        reference = parser.parse_comment(body)
+        reference = parser.parse_comment(db, body)
         reference['CommentId'] = comment.fullname
         reference['ParentId'] = parent_id
         reference['ParentText'] = parent_text

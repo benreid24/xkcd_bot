@@ -29,6 +29,16 @@ def connect_datastore(empty=False):
     return conn
 
 
+def comic_id_from_image(conn, img):
+    query = 'SELECT Comic FROM comics WHERE ImageName=:img'
+
+    try:
+        result = conn.execute(query, {'img': img})
+        return result.fetchone()[0]
+    except Exception:
+        return 0
+
+
 def fetch_comic_info(id):
     url = 'http://xkcd.com/'
     if not id:
