@@ -30,6 +30,7 @@ def main():
 
         # Connect to datastore
         datastore = ds.connect_datastore()
+        ds.generate_comic_list(datastore)
 
         # Run bot
         config = json.load(open('config.json'))
