@@ -1,13 +1,17 @@
 import logging
+import re
 
 import datastore
 
 logger = logging.getLogger(__name__)
 
 
+def reference_is_unique(references, reference):
+    return reference['Comic'] not in [ref['Comic'] for ref in references]
+
+
 def contains_reference(comment):
-    # TODO Ensure that it is actually a comic being referenced, not a whatif
-    return 'xkcd.com' in comment and 'explainxkcd.com' not in comment
+    return 'xkcd.com' in comment and 'explainxkcd.com' not in comment and 'what-if.xkcd.com' not in comment
 
 
 def parse_link(conn, link):
@@ -25,15 +29,23 @@ def parse_link(conn, link):
 
 
 def parse_comment(conn, comment):
-    parsed = {
-        'Text': comment
-    }
+    references = []
 
-    # TODO What do we do if there are multiple comics referenced?
     for word in comment.split():
         if contains_reference(word):
-            parsed['Link'] = word # TODO Remove Reddit link syntax around the link, if present
-            parsed['Comic'] = parse_link(conn, word)
-            logger.info('Parsed out link (%s) and id(%i) in xkcd reference', parsed['Link'], parsed['Comic'])
+            sects = re.findall(r'\(([^)]*)\)', word)
+            if sects:
+                if len(sects)>1:
+                    logger.warning(f'Link ({word}) has weird formatting. Taking first bracket region as the url')
+                word = sects[0]
 
-    return parsed
+            reference = {
+                'Text': comment
+            }
+            reference['Link'] = word
+            reference['Comic'] = parse_link(conn, word)
+            if reference['Comic'] != 0 and reference_is_unique(references, reference):
+                logger.info('Parsed out link (%s) and id(%i) in xkcd reference', reference['Link'], reference['Comic'])
+                references.append(reference)
+
+    return references

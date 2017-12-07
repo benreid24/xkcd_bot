@@ -6,6 +6,61 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
+                                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                      CommentId varchar(64) NOT NULL,
+                                      Text varchar(1024) NOT NULL,
+                                      Link varchar(256) NOT NULL,
+                                      Comic int NOT NULL,
+                                      ParentId varchar(64) NULL,
+                                      ParentText varchar(1024) NULL,
+                                      UNIQUE(CommentId, Comic) ON CONFLICT IGNORE
+                                  );
+"""
+
+INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
+                                CommentId,
+                                Text,
+                                Link,
+                                Comic,
+                                ParentId,
+                                ParentText
+                            )
+                            VALUES (
+                                :CommentId,
+                                :Text,
+                                :Link,
+                                :Comic,
+                                :ParentId,
+                                :ParentText
+                            );
+"""
+
+CREATE_COMIC_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS comics (
+                                  Comic INTEGER PRIMARY KEY,
+                                  ImageName varchar(128),
+                                  Title varchar(256),
+                                  Text varchar(1024),
+                                  Transcript varchar(2048)
+                              );
+"""
+
+INSERT_COMIC_QUERY = """INSERT INTO comics (
+                            Comic,
+                            ImageName,
+                            Title,
+                            Text,
+                            Transcript
+                        )
+                        VALUES (
+                            :num,
+                            :imgshort,
+                            :title,
+                            :alt,
+                            :transcript
+                        );
+"""
+
 
 def connect_datastore(empty=False):
     if empty:
@@ -13,18 +68,7 @@ def connect_datastore(empty=False):
     conn = sqlite3.connect('database.db')
     fetch_comic_info(None)
 
-    query = """CREATE TABLE IF NOT EXISTS links
-                (
-                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   CommentId varchar(64) NOT NULL UNIQUE,
-                   Text varchar(1024) NOT NULL,
-                   Link varchar(256) NOT NULL,
-                   Comic int NOT NULL,
-                   ParentId varchar(64) NULL,
-                   ParentText varchar(1024) NULL
-                );
-    """
-    conn.execute(query)
+    conn.execute(CREATE_REFERENCE_TABLE_QUERY)
 
     return conn
 
@@ -62,30 +106,17 @@ def max_comic_id(conn):
     try:
         cursor = conn.cursor()
         result = cursor.execute(query).fetchone()
+        if result[0] is None:
+            return 0
         return result[0]
     except Exception:
         logger.info('Could not select max comic id, returning 1')
-        return 1
+        return 0
 
 
 def insert_comic(conn, comic):
     logger.debug(f'Inserting comic {comic}')
 
-    query = """INSERT INTO comics (
-                   Comic,
-                   ImageName,
-                   Title,
-                   Text,
-                   Transcript
-               )
-               VALUES (
-                   :num,
-                   :imgshort,
-                   :title,
-                   :alt,
-                   :transcript
-               )
-    """
     comic['imgshort'] = comic['img']
     for s in comic['img'].split('/'):
         if '.png' in s or '.jpg' in s:
@@ -93,37 +124,24 @@ def insert_comic(conn, comic):
             break
     cursor = conn.cursor()
     try:
-        cursor.execute(query, comic)
+        cursor.execute(INSERT_COMIC_QUERY, comic)
         conn.commit()
     except sqlite3.Error:
         logger.warning('Comic %i already in db', comic['num'])
 
 
 def generate_comic_list(conn):
-    exists_query = "SELECT * FROM comics LIMIT 1"
-    try:
-        result = conn.execute(exists_query)
-        link = result.fetchone()
-    except sqlite3.Error:
-        query = """
-            CREATE TABLE IF NOT EXISTS comics (
-                Comic INTEGER PRIMARY KEY,
-                ImageName varchar(128),
-                Title varchar(256),
-                Text varchar(1024),
-                Transcript varchar(2048)
-            )
-        """
-        conn.execute(query)
+    conn.execute(CREATE_COMIC_TABLE_QUERY)
 
     # Query xckd to get all links
     latest_comic = fetch_comic_info(None)
     latest_id = max_comic_id(conn)
 
-    logger.info('Last comic id seen was %i and the latest is %i', latest_comic['num'], latest_id)
+    logger.info('Last comic id seen was %i and the latest is %i', latest_id, latest_comic['num'])
 
     if latest_id < latest_comic['num']:
-        for i in range(latest_id+1, latest_comic['num']):
+        for i in range(latest_id+1, latest_comic['num']+1):
+            logger.info('Fetching comic: %i', i)
             comic = fetch_comic_info(i)
             if 'num' in comic:
                 insert_comic(conn, comic)
@@ -135,23 +153,9 @@ def save_reference(db, reference):
     if 'ParentText' not in reference:
         reference['ParentText'] = None
 
-    query = """INSERT INTO
-               links (
-                   CommentId,
-                   Text,
-                   Link,
-                   Comic,
-                   ParentId,
-                   ParentText
-               )
-               VALUES (
-                   :CommentId,
-                   :Text,
-                   :Link,
-                   :Comic,
-                   :ParentId,
-                   :ParentText);
-               """
-    cursor = db.cursor()
-    cursor.execute(query, reference)
-    db.commit()
+    try:
+        cursor = db.cursor()
+        cursor.execute(INSERT_REFERENCE_QUERY, reference)
+        db.commit()
+    except sqlite3.Error:
+        logger.warning('Error inserting reference %s in db, it likely already exists', reference['CommentId'])
