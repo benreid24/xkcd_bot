@@ -7,10 +7,12 @@ import praw
 import datastore as ds
 import bot
 
+
 def setup_logging():
     with open('logging.json') as f:
         config = json.load(f)
         logging.config.dictConfig(config)
+
 
 def main():
     try:

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
                                       Poster varchar(128) NOT NULL,
+                                      Subreddit varchar(128) NOT NULL,
                                       CommentId varchar(64) NOT NULL,
                                       Text varchar(1024) NOT NULL,
                                       Link varchar(256) NOT NULL,
@@ -21,6 +22,7 @@ CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
 
 INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
                                 Poster,
+                                Subreddit,
                                 CommentId,
                                 Text,
                                 Link,
@@ -30,6 +32,7 @@ INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
                             )
                             VALUES (
                                 :Poster,
+                                :Sub,
                                 :CommentId,
                                 :Text,
                                 :Link,
