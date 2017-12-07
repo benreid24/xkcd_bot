@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                      Poster varchar(128) NOT NULL,
                                       CommentId varchar(64) NOT NULL,
                                       Text varchar(1024) NOT NULL,
                                       Link varchar(256) NOT NULL,
@@ -19,6 +20,7 @@ CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
 """
 
 INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
+                                Poster,
                                 CommentId,
                                 Text,
                                 Link,
@@ -27,6 +29,7 @@ INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
                                 ParentText
                             )
                             VALUES (
+                                :Poster,
                                 :CommentId,
                                 :Text,
                                 :Link,
@@ -109,7 +112,7 @@ def max_comic_id(conn):
         if result[0] is None:
             return 0
         return result[0]
-    except Exception:
+    except sqlite3.Error:
         logger.info('Could not select max comic id, returning 1')
         return 0
 
@@ -126,8 +129,8 @@ def insert_comic(conn, comic):
     try:
         cursor.execute(INSERT_COMIC_QUERY, comic)
         conn.commit()
-    except sqlite3.Error:
-        logger.warning('Comic %i already in db', comic['num'])
+    except sqlite3.Error as err:
+        logger.warning('Comic %i already in db: %s', comic['num'], str(err))
 
 
 def generate_comic_list(conn):
@@ -157,5 +160,7 @@ def save_reference(db, reference):
         cursor = db.cursor()
         cursor.execute(INSERT_REFERENCE_QUERY, reference)
         db.commit()
-    except sqlite3.Error:
-        logger.warning('Error inserting reference %s in db, it likely already exists', reference['CommentId'])
+    except sqlite3.Error as err:
+        logger.warning(
+            'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
+        )

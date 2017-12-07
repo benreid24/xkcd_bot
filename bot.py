@@ -1,6 +1,7 @@
 import logging
 import html
 
+from praw.models import MoreComments
 import praw
 
 import bot_parser as parser
@@ -9,9 +10,10 @@ import datastore
 logger = logging.getLogger(__name__)
 
 
-def handle_references(db, references, comment_id, parent_id, parent_text):
+def handle_references(db, references, poster, comment_id, parent_id, parent_text):
     if references:
         for reference in references:
+            reference['Poster'] = poster
             reference['CommentId'] = comment_id
             reference['ParentId'] = parent_id
             reference['ParentText'] = parent_text
@@ -21,6 +23,7 @@ def handle_references(db, references, comment_id, parent_id, parent_text):
 
 
 def handle_submission(db, submission):
+    poster = submission.author.name
     body = html.unescape(submission.selftext)
     url = html.unescape(submission.url)
     text = body+"\n"+url
@@ -28,7 +31,7 @@ def handle_submission(db, submission):
     if parser.contains_reference(text):
         logger.info('Found potential xkcd reference(s) in submission %s', submission.fullname)
         references = parser.parse_comment(db, text)
-        handle_references(db, references, submission.fullname, None, None)
+        handle_references(db, references, poster, submission.fullname, None, None)
 
     comments = submission.comments
     comments.replace_more(10)
@@ -37,12 +40,18 @@ def handle_submission(db, submission):
 
 
 def handle_comment(db, comment, parent_id, parent_text):
+    if isinstance(comment, MoreComments):
+        return
+
+    poster = '[deleted]'
+    if comment.author is not None:
+        poster = comment.author.name
     body = html.unescape(comment.body)
 
     if parser.contains_reference(body):
-        logger.info('Found xkcd reference in comment %s', comment.fullname)
+        logger.info('Found potential xkcd reference in comment %s', comment.fullname)
         references = parser.parse_comment(db, body)
-        handle_references(db, references, comment.fullname, parent_id, parent_text)
+        handle_references(db, references, poster, comment.fullname, parent_id, parent_text)
 
     replies = comment.replies
     replies.replace_more(5)
@@ -56,6 +65,7 @@ def run(reddit, db, config):
 
     subreddit_str = '+'.join(config['subreddits'])
 
+    # http://praw.readthedocs.io/en/latest/code_overview/other/subredditstream.html#praw.models.reddit.subreddit.SubredditStream.comments
     subreddit = reddit.subreddit(subreddit_str)
     for submission in subreddit.top("all", limit=2):
         handle_submission(db, submission)
