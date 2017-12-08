@@ -3,6 +3,7 @@ import logging
 import logging.config
 
 import praw
+from sshtunnel import SSHTunnelForwarder
 
 import datastore as ds
 import reference_scanner
@@ -23,25 +24,42 @@ def main():
 
         # Connect to Reddit
         auth = json.load(open('auth.json'))
-        reddit = praw.Reddit(username=auth['username'],
-                             password=auth['password'],
-                             client_id=auth['app_id'],
-                             client_secret=auth['secret'],
-                             user_agent='xkcd Stats Bot by u/xkcd_stats_bot'
+        reddit = praw.Reddit(username=auth['reddit']['username'],
+                             password=auth['reddit']['password'],
+                             client_id=auth['reddit']['app_id'],
+                             client_secret=auth['reddit']['secret'],
+                             user_agent=auth['reddit']['user_agent']
                              )
         logger.info("Connected to Reddit as: "+str(reddit.user.me()))
 
+        # SSH tunnel to database
+        tunnel = SSHTunnelForwarder(
+            (auth['database']['host'], int(auth['database']['port'])),
+            ssh_username=auth['database']['ssh_user'],
+            ssh_password=auth['database']['ssh_pw'],
+            remote_bind_address=('127.0.0.1', 3306)
+        )
+        tunnel.start()
+
         # Connect to datastore
-        db = ds.connect_datastore()
+        db = ds.connect_datastore(
+            '127.0.0.1',
+            tunnel.local_bind_port,
+            auth['database']['name'],
+            auth['database']['user'],
+            auth['database']['password']
+        )
 
         # Check once for new comics before streaming new data forever
-        xkcd_updater.run()
+        xkcd_updater.run(db)
 
         # Run bot
         reference_scanner.run(reddit, db)
 
     except Exception as err:
         logger.error('Caught exception: %s', str(err), exc_info=True)
+
+    tunnel.stop()
 
 
 if __name__ == '__main__':

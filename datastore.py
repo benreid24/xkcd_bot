@@ -1,13 +1,15 @@
-import sqlite3
-import os
 import logging
 import threading
+
+import sqlalchemy
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql import text
 
 logger = logging.getLogger(__name__)
 db_lock = threading.Lock()
 
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
-                                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                      id int AUTO_INCREMENT,
                                       Type varchar(16) NOT NULL,
                                       Poster varchar(128) NOT NULL,
                                       Subreddit varchar(128) NOT NULL,
@@ -17,11 +19,13 @@ CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       Comic int NOT NULL,
                                       ParentId varchar(64) NULL,
                                       ParentText varchar(1024) NULL,
-                                      UNIQUE(CommentId, Comic) ON CONFLICT IGNORE
+                                      
+                                      PRIMARY KEY(id),
+                                      UNIQUE(CommentId, Comic)
                                   );
 """
 
-INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
+INSERT_REFERENCE_QUERY = """INSERT IGNORE INTO mentions (
                                 Type,
                                 Poster,
                                 Subreddit,
@@ -46,11 +50,11 @@ INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
 """
 
 
-def connect_datastore(empty=False):
-    if empty:
-        os.remove('database.db')
-    conn = sqlite3.connect('database.db', check_same_thread=False)
-    conn.execute(CREATE_REFERENCE_TABLE_QUERY)
+def connect_datastore(db_host, db_port, db_name, sql_user, sql_pw):
+    conn_str = f'mysql://{sql_user}:{sql_pw}@{db_host}:{db_port}/{db_name}'
+    conn = sqlalchemy.create_engine(conn_str)
+
+    conn.execute(text(CREATE_REFERENCE_TABLE_QUERY))
 
     return conn
 
@@ -75,10 +79,8 @@ def save_reference(db, reference):
         reference['ParentText'] = None
 
     try:
-        cursor = db.cursor()
-        cursor.execute(INSERT_REFERENCE_QUERY, reference)
-        db.commit()
-    except sqlite3.Error as err:
+        db.execute(text(INSERT_REFERENCE_QUERY), reference)
+    except SQLAlchemyError as err:
         logger.warning(
             'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
         )

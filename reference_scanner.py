@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 def handle_references(db, references, type, poster, sub, comment_id, parent_id, parent_text):
     if references:
+        con = db.connect()
+
         for reference in references:
             reference['Type'] = type
             reference['Poster'] = poster
@@ -19,7 +21,8 @@ def handle_references(db, references, type, poster, sub, comment_id, parent_id, 
             reference['CommentId'] = comment_id
             reference['ParentId'] = parent_id
             reference['ParentText'] = parent_text
-            datastore.save_reference(db, reference)
+            datastore.save_reference(con, reference)
+        con.close()
     else:
         logger.info(f'Comment {comment_id} did not contain an identifiable reference')
 
@@ -77,8 +80,9 @@ def read_submission_stream(db, subreddit):
 def run(reddit, db):
     logger.info('Beginning execution of xkcd bot')
 
-    subreddit = reddit.subreddit('all')
-    t1 = threading.Thread(target=read_comment_stream, args=(db, subreddit))
-    t1.start()
-    t2 = threading.Thread(target=read_submission_stream, args=(db, subreddit))
-    t2.start()
+    subreddit = reddit.subreddit('xkcd')
+    read_comment_stream(db, subreddit)
+    #t1 = threading.Thread(target=read_comment_stream, args=(db, subreddit))
+    #t1.start()
+    #t2 = threading.Thread(target=read_submission_stream, args=(db, subreddit))
+    #t2.start()
