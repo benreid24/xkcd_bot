@@ -10,9 +10,10 @@ import datastore
 logger = logging.getLogger(__name__)
 
 
-def handle_references(db, references, poster, sub, comment_id, parent_id, parent_text):
+def handle_references(db, references, type, poster, sub, comment_id, parent_id, parent_text):
     if references:
         for reference in references:
+            reference['Type'] = type
             reference['Poster'] = poster
             reference['Sub'] = sub
             reference['CommentId'] = comment_id
@@ -33,7 +34,7 @@ def handle_submission(db, submission):
     if parser.contains_reference(text):
         logger.info('Found potential xkcd reference(s) in submission %s', submission.fullname)
         references = parser.parse_comment(db, text)
-        handle_references(db, references, poster, sub, submission.fullname, None, None)
+        handle_references(db, references, 'Submission', poster, sub, submission.fullname, None, None)
 
     comments = submission.comments
     comments.replace_more()
@@ -55,7 +56,7 @@ def handle_comment(db, comment, parent_text):
     if parser.contains_reference(body):
         logger.info('Found potential xkcd reference in comment %s', comment.fullname)
         references = parser.parse_comment(db, body)
-        handle_references(db, references, poster, sub, comment.fullname, parent_id, parent_text)
+        handle_references(db, references, 'Comment', poster, sub, comment.fullname, parent_id, parent_text)
 
     replies = comment.replies
     replies.replace_more()

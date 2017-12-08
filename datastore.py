@@ -10,6 +10,7 @@ db_lock = threading.Lock()
 
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                      Type varchar(16) NOT NULL,
                                       Poster varchar(128) NOT NULL,
                                       Subreddit varchar(128) NOT NULL,
                                       CommentId varchar(64) NOT NULL,
@@ -23,6 +24,7 @@ CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
 """
 
 INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
+                                Type,
                                 Poster,
                                 Subreddit,
                                 CommentId,
@@ -33,6 +35,7 @@ INSERT_REFERENCE_QUERY = """INSERT INTO mentions (
                                 ParentText
                             )
                             VALUES (
+                                :Type,
                                 :Poster,
                                 :Sub,
                                 :CommentId,
@@ -74,8 +77,8 @@ def connect_datastore(empty=False):
     if empty:
         os.remove('database.db')
     conn = sqlite3.connect('database.db', check_same_thread=False)
-    fetch_comic_info(None)
 
+    fetch_comic_info(None)
     conn.execute(CREATE_REFERENCE_TABLE_QUERY)
 
     return conn
@@ -87,7 +90,8 @@ def comic_id_from_image(conn, img):
     try:
         result = conn.execute(query, {'img': img})
         return result.fetchone()[0]
-    except Exception:
+    except Exception as err:
+        logger.debug(f'Failed to get comic id from image file: {err}')
         return 0
 
 
@@ -171,5 +175,5 @@ def save_reference(db, reference):
         logger.warning(
             'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
         )
-    
+
     db_lock.release()
