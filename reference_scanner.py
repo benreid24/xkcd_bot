@@ -65,27 +65,19 @@ def handle_comment(db, comment, parent_text):
 
 
 def read_comment_stream(db, subreddit):
-    count = 0
     for comment in subreddit.stream.comments():
         handle_comment(db, comment, None)
-        count += 1
-        if count >= 5:
-            break
 
 
 def read_submission_stream(db, subreddit):
-    count = 0
     for submission in subreddit.stream.submissions():
         handle_submission(db, submission)
-        count += 1
-        if count >= 5:
-            break
 
 
 def run(reddit, db):
     logger.info('Beginning execution of xkcd bot')
 
-    subreddit = reddit.subreddit('xkcd')
+    subreddit = reddit.subreddit('all')
     t1 = threading.Thread(target=read_comment_stream, args=(db, subreddit))
     t1.start()
     t2 = threading.Thread(target=read_submission_stream, args=(db, subreddit))
