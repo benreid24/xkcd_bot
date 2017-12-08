@@ -5,7 +5,8 @@ import logging.config
 import praw
 
 import datastore as ds
-import bot
+import reference_scanner
+import xkcd_updater
 
 
 def setup_logging():
@@ -31,11 +32,13 @@ def main():
         logger.info("Connected to Reddit as: "+str(reddit.user.me()))
 
         # Connect to datastore
-        datastore = ds.connect_datastore()
-        ds.generate_comic_list(datastore)
+        db = ds.connect_datastore()
+
+        # Check once for new comics before streaming new data forever
+        xkcd_updater.run()
 
         # Run bot
-        bot.run(reddit, datastore)
+        reference_scanner.run(reddit, db)
 
     except Exception as err:
         logger.error('Caught exception: %s', str(err), exc_info=True)

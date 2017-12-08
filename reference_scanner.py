@@ -4,7 +4,7 @@ import threading
 
 from praw.models import MoreComments
 
-import bot_parser as parser
+import comment_parser as parser
 import datastore
 
 logger = logging.getLogger(__name__)
