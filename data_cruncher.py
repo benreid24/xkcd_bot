@@ -26,7 +26,7 @@ COMIC_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS comic_counts (
                               )
 """
 
-USERS_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS redditors (
+USERS_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS poster_counts (
                                   Name varchar(32) NOT NULL,
                                   ReferenceCount int NOT NULL,
                                   UNIQUE(Name)
@@ -59,6 +59,17 @@ def group_comics(references, n_comics):
     for reference in references:
         comics[reference['Comic']] += 1
     return comics
+
+
+def group_posters(references):
+    posters = {}
+
+    for reference in references:
+        if reference['Poster'] not in posters:
+            posters[reference['Poster']] = 1
+        else:
+            posters[reference['Poster']] += 1
+    return posters
 
 
 def compute_basic_stats(references, comic_group):
@@ -97,6 +108,19 @@ def save_comic_counts(db, comic_group):
         comic_id += 1
 
 
+def save_poster_counts(db, posters):
+    query = text("""INSERT INTO poster_counts (Name, ReferenceCount)
+                    VALUES(:poster, :refs) ON DUPLICATE KEY UPDATE ReferenceCount=:refs
+                 """)
+
+    for poster in posters:
+        params = {
+            'poster': poster,
+            'refs': posters[poster]
+        }
+        db.execute(query, params)
+
+
 def run(reddit, db):
     create_tables(db)
     xkcd.run(db)
@@ -107,12 +131,19 @@ def run(reddit, db):
     logger.info('Fetching all xkcd references')
     references = get_all_references(db)
 
+    logger.info('Computing stats')
     max_comic = xkcd.max_comic_id(db)
     grouped_comics = group_comics(references, max_comic)
+    grouped_posters = group_posters(references)
+
     stats = compute_basic_stats(references, grouped_comics)
 
+    logger.info('Saving computed stats')
     save_comic_counts(db, grouped_comics)
+    save_poster_counts(db, grouped_posters)
     save_stats(db, stats)
+
+    logger.info('Done crunching data')
 
 
 if __name__ == '__main__':
