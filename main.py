@@ -35,8 +35,7 @@ def main():
         ds.generate_comic_list(datastore)
 
         # Run bot
-        config = json.load(open('config.json'))
-        bot.run(reddit, datastore, config)
+        bot.run(reddit, datastore)
 
     except Exception as err:
         logger.error('Caught exception: %s', str(err), exc_info=True)

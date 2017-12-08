@@ -6,8 +6,8 @@ import datastore
 logger = logging.getLogger(__name__)
 
 
-def reference_is_unique(references, reference):
-    return reference['Comic'] not in [ref['Comic'] for ref in references]
+def reference_is_unique(references, comic):
+    return comic not in [ref['Comic'] for ref in references]
 
 
 def contains_reference(comment):
@@ -40,12 +40,13 @@ def parse_comment(conn, comment):
                 word = sects[0]
 
             reference = {
-                'Text': comment
+                'Text': comment,
+                'Link': word,
             }
-            reference['Link'] = word
-            reference['Comic'] = parse_link(conn, word)
-            if reference['Comic'] != 0 and reference_is_unique(references, reference):
-                logger.info('Parsed out link (%s) and id(%i) in xkcd reference', reference['Link'], reference['Comic'])
+            comic = parse_link(conn, word)
+            if comic != 0 and reference_is_unique(references, comic):
+                logger.info('Parsed out link (%s) and id(%i) in xkcd reference', reference['Link'], comic)
+                reference['Comic'] = comic
                 references.append(reference)
 
     return references

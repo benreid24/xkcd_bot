@@ -1,5 +1,6 @@
 import logging
 import html
+import threading
 
 from praw.models import MoreComments
 
@@ -35,12 +36,12 @@ def handle_submission(db, submission):
         handle_references(db, references, poster, sub, submission.fullname, None, None)
 
     comments = submission.comments
-    comments.replace_more(10)
+    comments.replace_more()
     for comment in submission.comments:
-        handle_comment(db, comment, submission.fullname, text);
+        handle_comment(db, comment, text);
 
 
-def handle_comment(db, comment, parent_id, parent_text):
+def handle_comment(db, comment, parent_text):
     if isinstance(comment, MoreComments):
         return
 
@@ -49,6 +50,7 @@ def handle_comment(db, comment, parent_id, parent_text):
         poster = comment.author.name
     body = html.unescape(comment.body)
     sub = comment.subreddit.display_name
+    parent_id = comment.parent_id
 
     if parser.contains_reference(body):
         logger.info('Found potential xkcd reference in comment %s', comment.fullname)
@@ -56,18 +58,34 @@ def handle_comment(db, comment, parent_id, parent_text):
         handle_references(db, references, poster, sub, comment.fullname, parent_id, parent_text)
 
     replies = comment.replies
-    replies.replace_more(5)
+    replies.replace_more()
     for reply in replies:
-        handle_comment(db, reply, comment.fullname, comment.body)
+        handle_comment(db, reply, comment.body)
 
 
-def run(reddit, db, config):
-    # Run!
-    logger.info('Beginning execution of xkcd bot on %i subreddits', len(config['subreddits']))
+def read_comment_stream(db, subreddit):
+    count = 0
+    for comment in subreddit.stream.comments():
+        handle_comment(db, comment, None)
+        count += 1
+        if count >= 5:
+            break
 
-    subreddit_str = '+'.join(config['subreddits'])
 
-    # http://praw.readthedocs.io/en/latest/code_overview/other/subredditstream.html#praw.models.reddit.subreddit.SubredditStream.comments
-    subreddit = reddit.subreddit(subreddit_str)
-    for submission in subreddit.top("all", limit=2):
+def read_submission_stream(db, subreddit):
+    count = 0
+    for submission in subreddit.stream.submissions():
         handle_submission(db, submission)
+        count += 1
+        if count >= 5:
+            break
+
+
+def run(reddit, db):
+    logger.info('Beginning execution of xkcd bot')
+
+    subreddit = reddit.subreddit('xkcd')
+    t1 = threading.Thread(target=read_comment_stream, args=(db, subreddit))
+    t1.start()
+    t2 = threading.Thread(target=read_submission_stream, args=(db, subreddit))
+    t2.start()

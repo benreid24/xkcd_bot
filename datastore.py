@@ -3,8 +3,10 @@ import os
 import urllib.request
 import json
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
+db_lock = threading.Lock()
 
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +73,7 @@ INSERT_COMIC_QUERY = """INSERT INTO comics (
 def connect_datastore(empty=False):
     if empty:
         os.remove('database.db')
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('database.db', check_same_thread=False)
     fetch_comic_info(None)
 
     conn.execute(CREATE_REFERENCE_TABLE_QUERY)
@@ -154,6 +156,8 @@ def generate_comic_list(conn):
 
 
 def save_reference(db, reference):
+    db_lock.acquire()
+
     if 'ParentId' not in reference:
         reference['ParentId'] = None
     if 'ParentText' not in reference:
@@ -167,3 +171,5 @@ def save_reference(db, reference):
         logger.warning(
             'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
         )
+    
+    db_lock.release()
