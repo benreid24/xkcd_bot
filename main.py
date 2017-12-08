@@ -1,25 +1,18 @@
 import json
 import logging
-import logging.config
 
 import praw
-from sshtunnel import SSHTunnelForwarder
 
 import datastore as ds
 import reference_scanner
 import xkcd_updater
-
-
-def setup_logging():
-    with open('logging.json') as f:
-        config = json.load(f)
-        logging.config.dictConfig(config)
+import util
 
 
 def main():
     try:
         # Setup logging
-        setup_logging()
+        util.setup_logging()
         logger = logging.getLogger(__name__)
 
         # Connect to Reddit
@@ -33,13 +26,12 @@ def main():
         logger.info("Connected to Reddit as: "+str(reddit.user.me()))
 
         # SSH tunnel to database
-        tunnel = SSHTunnelForwarder(
-            (auth['database']['host'], int(auth['database']['port'])),
-            ssh_username=auth['database']['ssh_user'],
-            ssh_password=auth['database']['ssh_pw'],
-            remote_bind_address=('127.0.0.1', 3306)
+        tunnel = ds.create_ssh_tunnel(
+            auth['database']['host'],
+            int(auth['database']['port']),
+            auth['database']['ssh_user'],
+            auth['database']['ssh_pw']
         )
-        tunnel.start()
 
         # Connect to datastore
         db = ds.connect_datastore(

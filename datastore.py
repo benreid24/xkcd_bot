@@ -4,6 +4,7 @@ import threading
 import sqlalchemy
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
+from sshtunnel import SSHTunnelForwarder
 
 logger = logging.getLogger(__name__)
 db_lock = threading.Lock()
@@ -48,6 +49,17 @@ INSERT_REFERENCE_QUERY = """INSERT IGNORE INTO mentions (
                                 :ParentText
                             );
 """
+
+
+def create_ssh_tunnel(host, port, username, password):
+    tunnel = SSHTunnelForwarder(
+        (host, port),
+        ssh_username=username,
+        ssh_password=password,
+        remote_bind_address=('127.0.0.1', 3306)
+    )
+    tunnel.start()
+    return tunnel
 
 
 def connect_datastore(db_host, db_port, db_name, sql_user, sql_pw):

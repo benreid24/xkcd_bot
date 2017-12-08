@@ -105,15 +105,14 @@ def run(db):
 
 if __name__ == '__main__':
     auth = json.load(open('auth.json'))
-    tunnel = SSHTunnelForwarder(
-        (auth['database']['host'], auth['database']['port']),
-        ssh_username=auth['database']['ssh_user'],
-        ssh_password=auth['database']['ssh_pw'],
-        remote_bind_address=('127.0.0.1', 3306)
-    )
-    tunnel.start()
-    conn = datastore.connect_datastore(
+    tunnel = datastore.create_ssh_tunnel(
         auth['database']['host'],
+        int(auth['database']['port']),
+        auth['database']['ssh_user'],
+        auth['database']['ssh_pw']
+    )
+    conn = datastore.connect_datastore(
+        '127.0.0.1',
         tunnel.local_bind_port,
         auth['database']['name'],
         auth['database']['user'],
