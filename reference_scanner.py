@@ -10,12 +10,12 @@ import datastore
 logger = logging.getLogger(__name__)
 
 
-def handle_references(db, references, type, poster, sub, comment_id, parent_id, parent_text):
+def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
     if references:
         con = db.connect()
 
         for reference in references:
-            reference['Type'] = type
+            reference['Type'] = c_type
             reference['Poster'] = poster
             reference['Sub'] = sub
             reference['CommentId'] = comment_id

@@ -22,7 +22,9 @@ STATS_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS stats (
 COMIC_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS comic_counts (
                                   Comic int NOT NULL,
                                   ReferenceCount int NOT NULL,
-                                  PRIMARY KEY(Comic)
+                                  Percent double NOT NULL,
+                                  StdDevs double NOT NULL,
+                                  UNIQUE(Comic)
                               )
 """
 
@@ -54,8 +56,8 @@ def create_tables(db):
     db.execute(COMIC_TABLE_CREATE_QUERY)
 
 
-def group_comics(references, n_comics):
-    comics = [0] * n_comics
+def group_comics(references, ids):
+    comics = {comic: 0 for comic in ids}
     for reference in references:
         comics[reference['Comic']] += 1
     return comics
@@ -73,11 +75,11 @@ def group_posters(references):
 
 
 def compute_basic_stats(references, comic_group):
-
+    counts = [comic_group[key] for key in comic_group.keys()]
     stats = {
         'TotalReferences': len(references),
         'AverageReferencesPerComic': len(references)/len(comic_group),
-        'ComicReferenceCountStdDev': numpy.std(numpy.array(comic_group), ddof=0)
+        'ComicReferenceCountStdDev': numpy.std(numpy.array(counts), ddof=0)
     }
     return stats
 
@@ -93,19 +95,20 @@ def save_stats(db, stats):
         db.execute(query, params)
 
 
-def save_comic_counts(db, comic_group):
-    query = text("""INSERT INTO comic_counts (Comic, ReferenceCount)
-                    VALUES(:comic, :refs) ON DUPLICATE KEY UPDATE ReferenceCount=:refs
+def save_comic_counts(db, comic_group, total_refs, mean, std_dev):
+    query = text("""INSERT INTO comic_counts (Comic, ReferenceCount, Percent, StdDevs)
+                    VALUES(:comic, :refs, :percent, :stddevs)
+                    ON DUPLICATE KEY UPDATE ReferenceCount=:refs, Percent=:percent, StdDevs=:stddevs
                  """)
 
-    comic_id = 1
-    for refs in comic_group:
+    for comic in comic_group.keys():
         params = {
-            'comic': comic_id,
-            'refs': refs
+            'comic': comic,
+            'refs': comic_group[comic],
+            'percent': comic_group[comic]/total_refs*100,
+            'stddevs': (comic_group[comic]-mean)/std_dev
         }
         db.execute(query, params)
-        comic_id += 1
 
 
 def save_poster_counts(db, posters):
@@ -124,6 +127,7 @@ def save_poster_counts(db, posters):
 def run(reddit, db):
     create_tables(db)
     xkcd.run(db)
+    xkcd_ids = xkcd.get_comic_ids(db)
 
     logger.info('Backfilling ParentText in mentions table')
     parent_backfiller.run(reddit, db)
@@ -132,14 +136,19 @@ def run(reddit, db):
     references = get_all_references(db)
 
     logger.info('Computing stats')
-    max_comic = xkcd.max_comic_id(db)
-    grouped_comics = group_comics(references, max_comic)
+    grouped_comics = group_comics(references, xkcd_ids)
     grouped_posters = group_posters(references)
 
     stats = compute_basic_stats(references, grouped_comics)
+    stats['UniquePosters'] = len(grouped_posters)
+    stats['UniqueComics'] = len(grouped_comics)
 
     logger.info('Saving computed stats')
-    save_comic_counts(db, grouped_comics)
+    save_comic_counts(db,
+                      grouped_comics,
+                      stats['TotalReferences'],
+                      stats['AverageReferencesPerComic'],
+                      stats['ComicReferenceCountStdDev'])
     save_poster_counts(db, grouped_posters)
     save_stats(db, stats)
 
