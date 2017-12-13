@@ -169,6 +169,7 @@ def run(reddit, db):
     stats = compute_basic_stats(references, grouped_comics)
     stats['UniquePosters'] = len(grouped_posters)
     stats['UniqueComics'] = len(grouped_comics)
+    stats['UniqueSubs'] = len(grouped_subs)
 
     logger.info('Saving computed stats')
     save_comic_counts(db,
