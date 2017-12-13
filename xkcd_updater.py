@@ -2,12 +2,13 @@ import logging
 import urllib
 import urllib.request
 import json
+import ssl
 
-from sshtunnel import SSHTunnelForwarder
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 import datastore
+import util
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ def fetch_comic_info(id):
         url = url + str(id) + '/info.0.json'
 
     try:
-        response = urllib.request.urlopen(url)
+        context = ssl._create_unverified_context()
+        response = urllib.request.urlopen(url, context=context)
         data = json.load(response)
         data['num'] = int(data['num'])
         return data
@@ -97,6 +99,13 @@ def generate_comic_list(db):
             comic = fetch_comic_info(i)
             if 'num' in comic:
                 insert_comic(db, comic)
+
+
+def get_comic_ids(db):
+    query = "SELECT Comic FROM comics"
+    result = db.execute(query)
+    ids = util.result_proxy_to_dict_list(result)
+    return [comic['Comic'] for comic in ids]
 
 
 def run(db):

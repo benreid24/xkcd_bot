@@ -1,6 +1,7 @@
 import logging
 import html
 import threading
+import time
 
 from praw.models import MoreComments
 
@@ -10,19 +11,16 @@ import datastore
 logger = logging.getLogger(__name__)
 
 
-def handle_references(db, references, type, poster, sub, comment_id, parent_id, parent_text):
+def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
     if references:
-        con = db.connect()
-
         for reference in references:
-            reference['Type'] = type
+            reference['Type'] = c_type
             reference['Poster'] = poster
             reference['Sub'] = sub
             reference['CommentId'] = comment_id
             reference['ParentId'] = parent_id
             reference['ParentText'] = parent_text
-            datastore.save_reference(con, reference)
-        con.close()
+            datastore.save_reference(db, reference)
     else:
         logger.info(f'Comment {comment_id} did not contain an identifiable reference')
 
@@ -80,9 +78,9 @@ def read_submission_stream(db, subreddit):
 def run(reddit, db):
     logger.info('Beginning execution of xkcd bot')
 
-    subreddit = reddit.subreddit('xkcd')
+    subreddit = reddit.subreddit('all')
+
+    thread = threading.Thread(target=read_submission_stream, args=(db, subreddit))
+    thread.start()
+
     read_comment_stream(db, subreddit)
-    #t1 = threading.Thread(target=read_comment_stream, args=(db, subreddit))
-    #t1.start()
-    #t2 = threading.Thread(target=read_submission_stream, args=(db, subreddit))
-    #t2.start()

@@ -11,7 +11,10 @@ def reference_is_unique(references, comic):
 
 
 def contains_reference(comment):
-    return 'xkcd.com' in comment and 'explainxkcd.com' not in comment and 'what-if.xkcd.com' not in comment
+    return 'xkcd.com' in comment and\
+           'explainxkcd.com' not in comment and\
+           'what-if.xkcd.com' not in comment and\
+           'blog.xkcd.com' not in comment
 
 
 def parse_link(conn, link):

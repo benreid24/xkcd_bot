@@ -1,5 +1,4 @@
 import logging
-import threading
 
 import sqlalchemy
 from sqlalchemy.exc import SQLAlchemyError
@@ -7,7 +6,6 @@ from sqlalchemy.sql import text
 from sshtunnel import SSHTunnelForwarder
 
 logger = logging.getLogger(__name__)
-db_lock = threading.Lock()
 
 CREATE_REFERENCE_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS mentions (
                                       id int AUTO_INCREMENT,
@@ -63,10 +61,11 @@ def create_ssh_tunnel(host, port, username, password):
 
 
 def connect_datastore(db_host, db_port, db_name, sql_user, sql_pw):
-    conn_str = f'mysql://{sql_user}:{sql_pw}@{db_host}:{db_port}/{db_name}'
+    conn_str = f'mysql+cymysql://{sql_user}:{sql_pw}@{db_host}:{db_port}/{db_name}?charset=utf8'
     conn = sqlalchemy.create_engine(conn_str)
 
     conn.execute(text(CREATE_REFERENCE_TABLE_QUERY))
+    conn.execute(f'ALTER DATABASE {db_name} CHARACTER SET utf8 COLLATE utf8_unicode_ci;')
 
     return conn
 
@@ -83,8 +82,6 @@ def comic_id_from_image(conn, img):
 
 
 def save_reference(db, reference):
-    db_lock.acquire()
-
     if 'ParentId' not in reference:
         reference['ParentId'] = None
     if 'ParentText' not in reference:
@@ -96,5 +93,3 @@ def save_reference(db, reference):
         logger.warning(
             'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
         )
-
-    db_lock.release()
