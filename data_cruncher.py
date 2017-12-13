@@ -58,7 +58,10 @@ def create_tables(db):
 def group_comics(references, ids):
     comics = {comic: 0 for comic in ids}
     for reference in references:
-        comics[reference['Comic']] += 1
+        if reference['Comic'] in comics:
+            comics[reference['Comic']] += 1
+        else:
+            logger.warning('Reference to nonexistent comic %i', reference['Comic'])
     return comics
 
 
