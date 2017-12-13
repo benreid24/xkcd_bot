@@ -61,7 +61,7 @@ def create_ssh_tunnel(host, port, username, password):
 
 
 def connect_datastore(db_host, db_port, db_name, sql_user, sql_pw):
-    conn_str = f'mysql://{sql_user}:{sql_pw}@{db_host}:{db_port}/{db_name}?charset=utf8'
+    conn_str = f'mysql+cymysql://{sql_user}:{sql_pw}@{db_host}:{db_port}/{db_name}?charset=utf8'
     conn = sqlalchemy.create_engine(conn_str)
 
     conn.execute(text(CREATE_REFERENCE_TABLE_QUERY))
