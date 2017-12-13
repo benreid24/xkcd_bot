@@ -2,6 +2,7 @@ import logging
 import urllib
 import urllib.request
 import json
+import ssl
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
@@ -47,7 +48,8 @@ def fetch_comic_info(id):
         url = url + str(id) + '/info.0.json'
 
     try:
-        response = urllib.request.urlopen(url)
+        context = ssl._create_unverified_context()
+        response = urllib.request.urlopen(url, context=context)
         data = json.load(response)
         data['num'] = int(data['num'])
         return data
