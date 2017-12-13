@@ -76,6 +76,17 @@ def group_posters(references):
     return posters
 
 
+def group_subs(references):
+    subs = {}
+
+    for reference in references:
+        if reference['Subreddit'] not in subs:
+            subs[reference['Subreddit']] = 1
+        else:
+            subs[reference['Subreddit']] += 1
+    return subs
+
+
 def compute_basic_stats(references, comic_group):
     counts = [comic_group[key] for key in comic_group.keys()]
     stats = {
@@ -126,6 +137,19 @@ def save_poster_counts(db, posters):
         db.execute(query, params)
 
 
+def save_sub_counts(db, subs):
+    query = text("""INSERT INTO subreddits (Name, ReferenceCount)
+                    VALUES(:sub, :refs) ON DUPLICATE KEY UPDATE ReferenceCount=:refs
+                 """)
+
+    for sub in subs:
+        params = {
+            'sub': sub,
+            'refs': subs[sub]
+        }
+        db.execute(query, params)
+
+
 def run(reddit, db):
     create_tables(db)
     xkcd.run(db)
@@ -140,6 +164,7 @@ def run(reddit, db):
     logger.info('Computing stats')
     grouped_comics = group_comics(references, xkcd_ids)
     grouped_posters = group_posters(references)
+    grouped_subs = group_subs(references)
 
     stats = compute_basic_stats(references, grouped_comics)
     stats['UniquePosters'] = len(grouped_posters)
@@ -152,6 +177,7 @@ def run(reddit, db):
                       stats['AverageReferencesPerComic'],
                       stats['ComicReferenceCountStdDev'])
     save_poster_counts(db, grouped_posters)
+    save_sub_counts(db, grouped_subs)
     save_stats(db, stats)
 
     logger.info('Done crunching data')
