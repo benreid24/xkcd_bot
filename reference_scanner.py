@@ -78,7 +78,7 @@ def read_submission_stream(db, subreddit):
 def run(reddit, db):
     logger.info('Beginning execution of xkcd bot')
 
-    subreddit = reddit.subreddit('xkcd')
+    subreddit = reddit.subreddit('all')
 
     thread = threading.Thread(target=read_submission_stream, args=(db, subreddit))
     thread.start()
