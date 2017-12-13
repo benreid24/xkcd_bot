@@ -3,7 +3,6 @@ import logging
 
 import praw
 from sqlalchemy.sql import text
-import numpy
 
 import datastore
 import parent_backfiller
@@ -79,7 +78,7 @@ def compute_basic_stats(references, comic_group):
     stats = {
         'TotalReferences': len(references),
         'AverageReferencesPerComic': len(references)/len(comic_group),
-        'ComicReferenceCountStdDev': numpy.std(numpy.array(counts), ddof=0)
+        'ComicReferenceCountStdDev': util.calc_std_dev(counts)
     }
     return stats
 
