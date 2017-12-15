@@ -3,6 +3,7 @@ import html
 import threading
 
 from praw.models import MoreComments
+import praw
 
 import comment_parser as parser
 import datastore
@@ -14,8 +15,11 @@ logger = logging.getLogger(__name__)
 def do_reply(parent, db, references):
     if len(references)==1:
         reply = util.construct_reply(db, references[0]['Comic'])
-        parent.reply(reply)
-        print(reply)
+        try:
+            parent.reply(reply)
+        except praw.exceptions.APIException:
+            logger.warning('Unable to comment on reference to %s', parent.fullname)
+            pass
 
 
 def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
