@@ -191,7 +191,7 @@ def count_nonzero_comics(refs):
 
 
 def get_bot_age():
-    start = datetime.datetime(year=2017, month=12, day=13, hour=7, tzinfo=datetime.timezone.utc)
+    start = datetime.datetime(year=2017, month=12, day=13, hour=17, tzinfo=datetime.timezone.utc)
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     diff = now - start
     return diff.total_seconds()/3600
