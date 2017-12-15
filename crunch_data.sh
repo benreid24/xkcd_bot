@@ -12,5 +12,7 @@ fi
 
 python data_cruncher.py
 
+rm ../xkcdredditstats.com/rawdata.zip
+rm -rf ../xkcdredditstats.com/data
 mv ./data ../xkcdredditstats.com/data
 mv ./rawdata.zip ../xkcdredditstats.com/
