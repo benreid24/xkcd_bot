@@ -100,3 +100,14 @@ def save_reference(db, reference):
 def fetch_all_data(db, table):
     proxy = db.execute(f'SELECT * FROM {table}')
     return util.result_proxy_to_dict_list(proxy)
+
+
+def get_comic_stats(db, comic_id):
+    query = text('SELECT ReferenceCount, StdDevs FROM comic_counts WHERE Comic=:c')
+    proxy = db.execute(query, {'c': comic_id})
+    try:
+        data = util.result_proxy_to_dict_list(proxy)
+        data = data[0]
+    except:
+        data = {'ReferenceCount': 'ERR', 'StdDevs': 'ERR'}
+    return data

@@ -1,14 +1,21 @@
 import logging
 import html
 import threading
-import time
 
 from praw.models import MoreComments
 
 import comment_parser as parser
 import datastore
+import util
 
 logger = logging.getLogger(__name__)
+
+
+def do_reply(parent, db, references):
+    if len(references)==1:
+        reply = util.construct_reply(db, references[0]['Comic'])
+        parent.reply(reply)
+        print(reply)
 
 
 def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
@@ -36,6 +43,7 @@ def handle_submission(db, submission):
         logger.info('Found potential xkcd reference(s) in submission %s', submission.fullname)
         references = parser.parse_comment(db, text)
         handle_references(db, references, 'Submission', poster, sub, submission.fullname, None, None)
+        do_reply(submission, db, references)
 
     comments = submission.comments
     comments.replace_more()
@@ -58,6 +66,7 @@ def handle_comment(db, comment, parent_text):
         logger.info('Found potential xkcd reference in comment %s', comment.fullname)
         references = parser.parse_comment(db, body)
         handle_references(db, references, 'Comment', poster, sub, comment.fullname, parent_id, parent_text)
+        do_reply(comment, db, references)
 
     replies = comment.replies
     replies.replace_more()
