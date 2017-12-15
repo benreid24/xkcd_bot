@@ -16,7 +16,7 @@ REPLY_TEMPLATE =\
 
 [Explaination]({explainlink})
 
-**Stats**: This comic has been referenced {count} times, {stddev:.4f} standard deviations different from the mean
+**Stats**: This comic has previously been referenced {count} times, {stddev:.4f} standard deviations different from the mean
 ______
 [xkcd.com](https://xkcd.com) | [xkcd sub](https://reddit.com/r/xkcd) | [Problems/Suggestions](https://github.com/benreid24/xkcd_bot/issues) | [The stats!](http://xkcdredditstats.com)
 """
