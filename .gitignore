@@ -4,3 +4,5 @@ auth.json
 __pycache__/
 logs/
 *.db-journal
+*.csv
+*.zip

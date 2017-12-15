@@ -1,5 +1,7 @@
 import logging
 
+import util
+
 import sqlalchemy
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
@@ -93,3 +95,8 @@ def save_reference(db, reference):
         logger.warning(
             'Error inserting reference %s in db, it likely already exists: %s', reference['CommentId'], str(err)
         )
+
+
+def fetch_all_data(db, table):
+    proxy = db.execute(f'SELECT * FROM {table}')
+    return util.result_proxy_to_dict_list(proxy)

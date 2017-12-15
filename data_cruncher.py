@@ -1,6 +1,9 @@
 import json
 import logging
 import datetime
+import csv
+import os
+import zipfile
 
 import praw
 from sqlalchemy.sql import text
@@ -104,6 +107,21 @@ def calc_sub_percents(subs, total_refs):
     return (total_refs-sig_refs)/total_refs*100
 
 
+def add_comic_stats(comic_group, total_refs, mean, std_dev):
+    comic_list = []
+
+    for comic in comic_group:
+        data = {
+            'Comic': comic,
+            'Count': comic_group[comic],
+            'Percent': comic_group[comic] / total_refs * 100,
+            'StdDevsFromMean': (comic_group[comic] - mean) / std_dev
+        }
+        comic_list.append(data)
+
+    return comic_list
+
+
 def compute_basic_stats(references, comic_group):
     counts = [comic_group[key] for key in comic_group.keys()]
     stats = {
@@ -125,20 +143,14 @@ def save_stats(db, stats):
         db.execute(query, params)
 
 
-def save_comic_counts(db, comic_group, total_refs, mean, std_dev):
+def save_comic_counts(db, comic_group):
     query = text("""INSERT INTO comic_counts (Comic, ReferenceCount, Percent, StdDevs)
-                    VALUES(:comic, :refs, :percent, :stddevs)
-                    ON DUPLICATE KEY UPDATE ReferenceCount=:refs, Percent=:percent, StdDevs=:stddevs
+                    VALUES(:Comic, :Count, :Percent, :StdDevsFromMean)
+                    ON DUPLICATE KEY UPDATE ReferenceCount=:Count, Percent=:Percent, StdDevs=:StdDevsFromMean
                  """)
 
     for comic in comic_group.keys():
-        params = {
-            'comic': comic,
-            'refs': comic_group[comic],
-            'percent': comic_group[comic]/total_refs*100,
-            'stddevs': (comic_group[comic]-mean)/std_dev
-        }
-        db.execute(query, params)
+        db.execute(query, comic)
 
 
 def save_poster_counts(db, posters):
@@ -185,6 +197,61 @@ def get_bot_age():
     return diff.seconds/3600
 
 
+def sort_dict_list(data, sort_col):
+    return sorted(data, key=lambda k: k[sort_col], reverse=True)
+
+
+def add_rank_column(data):
+    rank = 1
+    for row in data:
+        row['Rank'] = rank
+        rank += 1
+
+
+def save_to_csv(file, data):
+    if len(data) == 0:
+        return
+
+    keys = list(data[0].keys())
+    if 'Rank' in keys:
+        keys.remove('Rank')
+        keys.insert(0, 'Rank')
+    with open(file, 'w', encoding='utf-8') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys, lineterminator='\n')
+        dict_writer.writeheader()
+        dict_writer.writerows(data)
+
+
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
+
+
+def save_raw_data(db, comic_ranking):
+    try:
+        os.mkdir('data')
+    except FileExistsError:
+        pass
+    save_to_csv('data/ranking.csv', comic_ranking)
+
+    db_tables = [
+        'mentions',
+        'comic_counts',
+        'poster_counts',
+        'comics',
+        'stats',
+        'subreddits'
+    ]
+    for table in db_tables:
+        data = datastore.fetch_all_data(db, table)
+        save_to_csv(f'data/{table}.csv', data)
+
+    zipf = zipfile.ZipFile('rawdata.zip', 'w', zipfile.ZIP_DEFLATED)
+    zipdir('data/', zipf)
+    zipf.close()
+
+
 def run(reddit, db):
     create_tables(db)
     xkcd.run(db)
@@ -208,15 +275,21 @@ def run(reddit, db):
     stats['RefsPerHour'] = stats['TotalReferences']/get_bot_age()
     stats['LessOneRefSubs'] = calc_sub_percents(grouped_subs, stats['TotalReferences'])
 
+    grouped_comics = add_comic_stats(grouped_comics,
+                                     stats['TotalReferences'],
+                                     stats['AverageReferencesPerComic'],
+                                     stats['ComicReferenceCountStdDev'])
+
     logger.info('Saving computed stats')
-    save_comic_counts(db,
-                      grouped_comics,
-                      stats['TotalReferences'],
-                      stats['AverageReferencesPerComic'],
-                      stats['ComicReferenceCountStdDev'])
+    save_comic_counts(db, grouped_comics)
     save_poster_counts(db, grouped_posters)
     save_sub_counts(db, grouped_subs)
     save_stats(db, stats)
+
+    logger.info('Saving raw data')
+    grouped_comics = sort_dict_list(grouped_comics, 'Count')
+    add_rank_column(grouped_comics)
+    save_raw_data(db, grouped_comics)
 
     logger.info('Done crunching data')
 
