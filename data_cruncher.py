@@ -38,6 +38,8 @@ USERS_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS poster_counts (
 SUBREDDIT_TABLE_CREATE_QUERY = """CREATE TABLE IF NOT EXISTS subreddits (
                                       Name varchar(32) NOT NULL,
                                       ReferenceCount int NOT NULL,
+                                      Percent double NOT NULL,
+                                      NormPercent double NULL,
                                       UNIQUE(Name)
                                   )
 """
@@ -82,10 +84,24 @@ def group_subs(references):
 
     for reference in references:
         if reference['Subreddit'] not in subs:
-            subs[reference['Subreddit']] = 1
+            subs[reference['Subreddit']] = {'Count': 1}
         else:
-            subs[reference['Subreddit']] += 1
+            subs[reference['Subreddit']]['Count'] += 1
     return subs
+
+
+def calc_sub_percents(subs, total_refs):
+    sig_subs = []
+    sig_refs = 0
+    for sub in subs.keys():
+        subs[sub]['NormPercent'] = None
+        subs[sub]['Percent'] = subs[sub]['Count']/total_refs*100
+        if subs[sub]['Percent'] > 1:
+            sig_subs.append(sub)
+            sig_refs += subs[sub]['Count']
+    for sub in sig_subs:
+        subs[sub]['NormPercent'] = subs[sub]['Count']/sig_refs*100
+    return (total_refs-sig_refs)/total_refs*100
 
 
 def compute_basic_stats(references, comic_group):
@@ -139,14 +155,17 @@ def save_poster_counts(db, posters):
 
 
 def save_sub_counts(db, subs):
-    query = text("""INSERT INTO subreddits (Name, ReferenceCount)
-                    VALUES(:sub, :refs) ON DUPLICATE KEY UPDATE ReferenceCount=:refs
+    query = text("""INSERT INTO subreddits (Name, ReferenceCount, Percent, NormPercent)
+                    VALUES(:sub, :refs, :pc, :npc) ON DUPLICATE KEY UPDATE
+                    ReferenceCount=:refs, Percent=:pc, NormPercent=:npc
                  """)
 
     for sub in subs:
         params = {
             'sub': sub,
-            'refs': subs[sub]
+            'refs': subs[sub]['Count'],
+            'pc': subs[sub]['Percent'],
+            'npc': subs[sub]['NormPercent']
         }
         db.execute(query, params)
 
@@ -187,6 +206,7 @@ def run(reddit, db):
     stats['UniqueComics'] = count_nonzero_comics(grouped_comics)
     stats['UniqueSubs'] = len(grouped_subs)
     stats['RefsPerHour'] = stats['TotalReferences']/get_bot_age()
+    stats['LessOneRefSubs'] = calc_sub_percents(grouped_subs, stats['TotalReferences'])
 
     logger.info('Saving computed stats')
     save_comic_counts(db,
