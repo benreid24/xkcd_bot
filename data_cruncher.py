@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 
 import praw
 from sqlalchemy.sql import text
@@ -150,6 +151,13 @@ def save_sub_counts(db, subs):
         db.execute(query, params)
 
 
+def get_bot_age():
+    start = datetime.datetime(2017, 12, 13, 12, 0)
+    now = datetime.datetime.now()
+    diff = now - start
+    return diff.seconds/3600
+
+
 def run(reddit, db):
     create_tables(db)
     xkcd.run(db)
@@ -168,8 +176,9 @@ def run(reddit, db):
 
     stats = compute_basic_stats(references, grouped_comics)
     stats['UniquePosters'] = len(grouped_posters)
-    stats['UniqueComics'] = len(grouped_comics)
+    stats['UniqueComics'] = len([i for i, e in enumerate(grouped_comics) if e != 0])
     stats['UniqueSubs'] = len(grouped_subs)
+    stats['RefsPerHour'] = stats['TotalReferences']/get_bot_age()
 
     logger.info('Saving computed stats')
     save_comic_counts(db,
