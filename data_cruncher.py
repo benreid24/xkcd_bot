@@ -191,10 +191,10 @@ def count_nonzero_comics(refs):
 
 
 def get_bot_age():
-    start = datetime.datetime(2017, 12, 13, 12, 0)
-    now = datetime.datetime.now()
+    start = datetime.datetime(year=2017, month=12, day=13, hour=12)
+    now = datetime.datetime.utcnow()
     diff = now - start
-    return diff.seconds/3600
+    return diff.total_seconds()/3600
 
 
 def sort_dict_list(data, sort_col):
