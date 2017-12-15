@@ -149,7 +149,7 @@ def save_comic_counts(db, comic_group):
                     ON DUPLICATE KEY UPDATE ReferenceCount=:Count, Percent=:Percent, StdDevs=:StdDevsFromMean
                  """)
 
-    for comic in comic_group.keys():
+    for comic in comic_group:
         db.execute(query, comic)
 
 
