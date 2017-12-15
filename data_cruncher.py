@@ -151,6 +151,14 @@ def save_sub_counts(db, subs):
         db.execute(query, params)
 
 
+def count_nonzero_comics(refs):
+    count = 0
+    for key in refs.keys():
+        if refs[key] > 0:
+            count += 1
+    return count
+
+
 def get_bot_age():
     start = datetime.datetime(2017, 12, 13, 12, 0)
     now = datetime.datetime.now()
@@ -176,7 +184,7 @@ def run(reddit, db):
 
     stats = compute_basic_stats(references, grouped_comics)
     stats['UniquePosters'] = len(grouped_posters)
-    stats['UniqueComics'] = len([i for i, e in enumerate(grouped_comics) if e != 0])
+    stats['UniqueComics'] = count_nonzero_comics(grouped_comics)
     stats['UniqueSubs'] = len(grouped_subs)
     stats['RefsPerHour'] = stats['TotalReferences']/get_bot_age()
 
