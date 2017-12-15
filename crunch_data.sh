@@ -13,4 +13,4 @@ fi
 python data_cruncher.py
 
 mv ./data ../xkcdredditstats.com/data
-mv ./rawdata.zip ../xkcdredditstats/
+mv ./rawdata.zip ../xkcdredditstats.com/
