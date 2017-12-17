@@ -17,7 +17,7 @@ def do_reply(parent, db, references):
         reply = util.construct_reply(db, references[0]['Comic'])
         try:
             parent.reply(reply)
-        except praw.exceptions.APIException:
+        except:
             logger.warning('Unable to comment on reference to %s', parent.fullname)
             pass
 
