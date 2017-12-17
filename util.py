@@ -14,7 +14,7 @@ REPLY_TEMPLATE =\
 
 **Title-text**: {text}
 
-[Explaination]({explainlink})
+[Explanation]({explainlink})
 
 **Stats**: This comic has previously been referenced {count} times, {stddev:.4f} standard deviations different from the mean
 ______
