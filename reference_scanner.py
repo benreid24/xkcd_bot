@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 def do_reply(parent, db, references):
-    if len(references)==1:
-        reply = util.construct_reply(db, references[0]['Comic'])
+    if len(references) == 1:
         try:
+            reply = util.construct_reply(db, references[0]['Comic'])
             parent.reply(reply)
         except:
             logger.warning('Unable to comment on reference to %s', parent.fullname)
