@@ -51,7 +51,7 @@ def main():
 
     except Exception as err:
         logger.error('Caught exception: %s', str(err), exc_info=True)
-        sys.exit(1)
+        sys._exit(1)
 
     tunnel.stop()
 
