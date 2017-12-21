@@ -1,6 +1,8 @@
 import json
 import logging
 import sys
+import smtplib
+from email.mime.text import MIMEText
 
 import praw
 
@@ -51,6 +53,15 @@ def main():
 
     except Exception as err:
         logger.error('Caught exception: %s', str(err), exc_info=True)
+
+        msg = MIMEText(f'Forgive me creator, for I have been slain. My death was caused by:\n\n{err}')
+        msg['Subject'] = 'xkcd_stats_bot has died'
+        msg['From'] = 'xkcd_stats_bot@xkcdredditstats.com'
+        msg['To'] = 'benreid@buffalo.edu'
+        s = smtplib.SMTP('localhost')
+        s.send_message(msg)
+        s.quit()
+        
         sys._exit(1)
 
     tunnel.stop()
