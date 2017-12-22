@@ -15,8 +15,8 @@ USER_BLACKLIST = [
 ]
 
 
-def do_reply(parent, db, references):
-    if len(references) == 1:
+def do_reply(parent, db, poster, references):
+    if len(references) == 1 and poster not in USER_BLACKLIST:
         try:
             reply = util.construct_reply(db, references[0]['Comic'])
             parent.reply(reply)
@@ -26,7 +26,7 @@ def do_reply(parent, db, references):
 
 
 def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
-    if references and poster not in USER_BLACKLIST:
+    if references:
         for reference in references:
             reference['Type'] = c_type
             reference['Poster'] = poster
@@ -35,7 +35,7 @@ def handle_references(db, references, c_type, poster, sub, comment_id, parent_id
             reference['ParentId'] = parent_id
             reference['ParentText'] = parent_text
             datastore.save_reference(db, reference)
-    elif poster not in USER_BLACKLIST:
+    else:
         logger.info(f'Comment {comment_id} did not contain an identifiable reference')
 
 
@@ -50,7 +50,7 @@ def handle_submission(db, submission):
         logger.info('Found potential xkcd reference(s) in submission %s', submission.fullname)
         references = parser.parse_comment(db, text)
         handle_references(db, references, 'Submission', poster, sub, submission.fullname, None, None)
-        do_reply(submission, db, references)
+        do_reply(submission, db, poster, references)
 
     comments = submission.comments
     comments.replace_more()
@@ -73,7 +73,7 @@ def handle_comment(db, comment, parent_text):
         logger.info('Found potential xkcd reference in comment %s', comment.fullname)
         references = parser.parse_comment(db, body)
         handle_references(db, references, 'Comment', poster, sub, comment.fullname, parent_id, parent_text)
-        do_reply(comment, db, references)
+        do_reply(comment, db, poster, references)
 
     replies = comment.replies
     replies.replace_more()
