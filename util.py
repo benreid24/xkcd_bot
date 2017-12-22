@@ -7,7 +7,9 @@ import xkcd_updater
 import datastore
 
 REPLY_TEMPLATE =\
-"""[Image]({image})
+"""[Comic]({link})
+
+[Image]({image})
 
 [Mobile]({mlink})
 
@@ -50,6 +52,7 @@ def construct_reply(db, comic_id):
     comic_info = xkcd_updater.fetch_comic_info(comic_id)
     stats = datastore.get_comic_stats(db, comic_id)
 
+    comic_link = f'https://xkcd.com/{comic_id}'
     image_link = comic_info['img']
     mobile_link = f'https://m.xkcd.com/{comic_id}'
     title = html.enescape(comic_info['title'])
@@ -60,6 +63,7 @@ def construct_reply(db, comic_id):
     mean = stats['Mean']
 
     reply = REPLY_TEMPLATE.format(
+        link=comic_link,
         image=image_link,
         mlink=mobile_link,
         title=title,
