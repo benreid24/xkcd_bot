@@ -10,6 +10,9 @@ import datastore
 import util
 
 logger = logging.getLogger(__name__)
+USER_BLACKLIST = [
+    'auto-xkcd37'
+]
 
 
 def do_reply(parent, db, references):
@@ -23,7 +26,7 @@ def do_reply(parent, db, references):
 
 
 def handle_references(db, references, c_type, poster, sub, comment_id, parent_id, parent_text):
-    if references:
+    if references and poster not in USER_BLACKLIST:
         for reference in references:
             reference['Type'] = c_type
             reference['Poster'] = poster
@@ -32,7 +35,7 @@ def handle_references(db, references, c_type, poster, sub, comment_id, parent_id
             reference['ParentId'] = parent_id
             reference['ParentText'] = parent_text
             datastore.save_reference(db, reference)
-    else:
+    elif poster not in USER_BLACKLIST:
         logger.info(f'Comment {comment_id} did not contain an identifiable reference')
 
 
