@@ -1,6 +1,7 @@
 import json
 import logging
 import logging.config
+import html
 
 import xkcd_updater
 import datastore
@@ -51,8 +52,8 @@ def construct_reply(db, comic_id):
 
     image_link = comic_info['img']
     mobile_link = f'https://m.xkcd.com/{comic_id}'
-    title = comic_info['title']
-    text = comic_info['alt']
+    title = html.enescape(comic_info['title'])
+    text = html.unescape(comic_info['alt'])
     explainlink = f'https://www.explainxkcd.com/wiki/index.php/{comic_id}'
     refs = stats['ReferenceCount']
     stddevs = stats['StdDevs']
