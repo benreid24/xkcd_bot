@@ -1,6 +1,6 @@
 import json
 import logging
-import sys
+import os
 import smtplib
 from email.mime.text import MIMEText
 
@@ -62,7 +62,7 @@ def main():
         s.send_message(msg)
         s.quit()
 
-        sys._exit(1)
+        os.kill(os.getpid(), 9)
 
     tunnel.stop()
 
