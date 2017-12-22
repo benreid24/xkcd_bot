@@ -110,4 +110,12 @@ def get_comic_stats(db, comic_id):
         data = data[0]
     except:
         data = {'ReferenceCount': 'ERR', 'StdDevs': 'ERR'}
+
+    query = "SELECT Value FROM stats WHERE name='AverageReferencesPerComic'"
+    proxy = db.execute(query)
+    try:
+        stats = util.result_proxy_to_dict_list(proxy)
+        data['Mean'] = stats[0]['Value']
+    except:
+        data['Mean'] = 'ERR'
     return data

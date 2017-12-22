@@ -61,7 +61,7 @@ def main():
         s = smtplib.SMTP('localhost')
         s.send_message(msg)
         s.quit()
-        
+
         sys._exit(1)
 
     tunnel.stop()

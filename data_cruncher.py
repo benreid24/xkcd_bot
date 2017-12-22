@@ -99,7 +99,7 @@ def calc_sub_percents(subs, total_refs):
     for sub in subs.keys():
         subs[sub]['NormPercent'] = None
         subs[sub]['Percent'] = subs[sub]['Count']/total_refs*100
-        if subs[sub]['Percent'] > 1:
+        if subs[sub]['Percent'] >= 0.5:
             sig_subs.append(sub)
             sig_refs += subs[sub]['Count']
     for sub in sig_subs:

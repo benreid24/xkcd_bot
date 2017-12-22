@@ -16,7 +16,7 @@ REPLY_TEMPLATE =\
 
 [Explanation]({explainlink})
 
-**Stats**: This comic has previously been referenced {count} times, {stddev:.4f} standard deviations different from the mean
+**Stats**: This comic has previously been referenced {count} times, {stddev:.4f} standard deviations different from the mean ({mean:.4f} refs/comic)
 ______
 [xkcd.com](https://xkcd.com) | [xkcd sub](https://np.reddit.com/r/xkcd) | [Problems/Suggestions](https://github.com/benreid24/xkcd_bot/issues) | [**The stats!**](http://xkcdredditstats.com)
 """
@@ -56,6 +56,7 @@ def construct_reply(db, comic_id):
     explainlink = f'https://www.explainxkcd.com/wiki/index.php/{comic_id}'
     refs = stats['ReferenceCount']
     stddevs = stats['StdDevs']
+    mean = stats['Mean']
 
     reply = REPLY_TEMPLATE.format(
         image=image_link,
@@ -64,6 +65,7 @@ def construct_reply(db, comic_id):
         text=text,
         explainlink=explainlink,
         count=refs,
-        stddev=stddevs
+        stddev=stddevs,
+        mean=mean
     )
     return reply
