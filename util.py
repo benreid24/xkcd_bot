@@ -2,6 +2,7 @@ import json
 import logging
 import logging.config
 import html
+import os
 
 import xkcd_updater
 import datastore
@@ -25,8 +26,10 @@ ______
 """
 
 
-def setup_logging():
-    with open('logging.json') as f:
+def setup_logging(filename='logging.json'):
+    os.mkdir('logs')
+    os.mkdir('data_logs')
+    with open(filename) as f:
         config = json.load(f)
         logging.config.dictConfig(config)
 
