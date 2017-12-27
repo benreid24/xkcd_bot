@@ -27,8 +27,14 @@ ______
 
 
 def setup_logging(filename='logging.json'):
-    os.mkdir('logs')
-    os.mkdir('data_logs')
+    try:
+        os.mkdir('logs')
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir('data_logs')
+    except FileExistsError:
+        pass
     with open(filename) as f:
         config = json.load(f)
         logging.config.dictConfig(config)
