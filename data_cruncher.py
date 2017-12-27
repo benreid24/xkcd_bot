@@ -295,7 +295,7 @@ def run(reddit, db):
 
 
 if __name__ == '__main__':
-    util.setup_logging()
+    util.setup_logging('data_logging.json')
     logger = logging.getLogger(__name__)
 
     auth = json.load(open('auth.json'))
