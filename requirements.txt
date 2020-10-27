@@ -3,7 +3,7 @@ bcrypt==3.1.4
 certifi==2017.11.5
 cffi==1.11.2
 chardet==3.0.4
-cryptography==2.1.4
+cryptography==3.2
 cymysql==0.9.4
 idna==2.6
 paramiko==2.4.0
