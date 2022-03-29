@@ -6,7 +6,7 @@ chardet==3.0.4
 cryptography==2.1.4
 cymysql==0.9.4
 idna==2.6
-paramiko==2.4.0
+paramiko==2.10.1
 praw==5.2.0
 prawcore==0.12.0
 pyasn1==0.4.2
